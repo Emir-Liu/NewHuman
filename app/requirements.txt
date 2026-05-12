@@ -1,0 +1,20 @@
+# 基础依赖
+python-dotenv
+
+# LangChain 生态
+langchain
+langchain-core
+langchain-openai
+langchain-ollama
+langchain-community
+
+# 向量数据库
+chromadb
+
+# HTTP 客户端
+requests
+
+IPython
+
+# # skill相关包
+# skills_ref
