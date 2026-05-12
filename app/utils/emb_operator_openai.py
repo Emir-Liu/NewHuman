@@ -40,6 +40,7 @@ class EmbOperator:
                 base_url=self.base_url
             )
         else:
+            from openai import OpenAI
             self.client = OpenAI(
                 api_key=self.api_key,
                 base_url=self.base_url

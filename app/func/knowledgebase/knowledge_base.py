@@ -11,8 +11,8 @@ from langchain_community.vectorstores import Chroma
 
 from config.vectordb_config import VectorDBConfig
 from config.emb_config import EmbeddingConfig
-from utils.emb_operator import EmbOperator
-from vectorstore.base import BaseVectorStore, Document, SearchResult
+from utils.emb_operator_openai import EmbOperator
+from func.knowledgebase.base import BaseVectorStore, Document, SearchResult
 
 
 class KnowledgeBase(BaseVectorStore):

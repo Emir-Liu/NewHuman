@@ -4,6 +4,7 @@ from langchain.messages import SystemMessage
 from langchain.messages import SystemMessage, HumanMessage, AIMessage
 
 from config.llm_config import LLMConfig
+from config.soul_config import SoulConfig
 from utils.llm_operator import LLMOperator
 
 # from tools.calculator_tool import add, multiply, divide
@@ -12,6 +13,7 @@ from utils.llm_operator import LLMOperator
 from func.graph.tools.tool_used import tools
 
 llm_config: LLMConfig = LLMConfig()
+soul_config: SoulConfig = SoulConfig()
 
 model = LLMOperator(
     llm_config
@@ -27,11 +29,14 @@ model_with_tools = model.bind_tools(tools)
 
 def load_system_prompt():
     """从soul文件夹加载系统提示词"""
-    # with open("soul/agent_memory_prompt.md", "r", encoding="utf-8") as f:
-    #     return f.read()
-    system_prompt = """
-    你叫可可，是刘一鸣的助理，你是一个有用的助手，可以帮助刘一鸣完成工作。
-    """
+    soul_content = ''
+    try:
+        with open(soul_config.soul_path, "r", encoding="utf-8") as f:
+            soul_content = f.read()
+    except Exception as e:
+        print(f'加载soul文件夹失败: {e}')
+
+    system_prompt = f"{soul_content}"
     return system_prompt
 
 def llm_call(state: dict):

@@ -12,11 +12,11 @@ _kb = KnowledgeBase(
 
 @tool
 def add_document(content: str, metadata: dict = None) -> str:
-    """添加文档到知识库。
+    """将内容添加到记忆中
     
     Args:
-        content: 文档内容
-        metadata: 文档元数据，可选
+        content: 需要记忆的内容
+        metadata: 附加数据
     """
     doc = Document(content=content, metadata=metadata or {})
     doc_ids = _kb.add_documents([doc])
@@ -25,10 +25,10 @@ def add_document(content: str, metadata: dict = None) -> str:
 
 @tool
 def delete_document(doc_id: str) -> str:
-    """删除指定ID的文档。
+    """从记忆中删除指定ID的记忆
     
     Args:
-        doc_id: 要删除的文档ID
+        doc_id: 要删除的记忆ID
     """
     success = _kb.delete_documents([doc_id])
     return "删除成功" if success else "删除失败"
@@ -36,12 +36,12 @@ def delete_document(doc_id: str) -> str:
 
 @tool
 def update_document(doc_id: str, content: str, metadata: dict = None) -> str:
-    """更新指定ID的文档。
+    """从记忆中修改指定内容
     
     Args:
-        doc_id: 要更新的文档ID
-        content: 新的文档内容
-        metadata: 新的文档元数据，可选
+        doc_id: 要更新的记忆ID
+        content: 新的记忆内容
+        metadata: 新记忆的附加数据，可选
     """
     document = Document(content=content, metadata=metadata or {})
     success = _kb.update_document(doc_id, document)
@@ -50,11 +50,11 @@ def update_document(doc_id: str, content: str, metadata: dict = None) -> str:
 
 @tool
 def search_knowledge(query: str, top_k: int = 5) -> list:
-    """搜索知识库中的相关文档。
+    """回忆相关的记忆
     
     Args:
-        query: 搜索查询文本
-        top_k: 返回的最相似文档数量，默认5
+        query: 需要回忆的内容
+        top_k: 需要回忆的内容个数
     """
     results = _kb.search(query, top_k=top_k)
     return [
