@@ -1,0 +1,39 @@
+# 基础依赖
+python-dotenv
+
+# LangChain 生态
+langchain
+langchain-core
+langchain-openai
+langchain-ollama
+langchain-chroma
+langgraph
+
+# HTTP 客户端
+requests
+
+IPython
+
+# # skill相关包
+# skills_ref
+
+# 关系数据库 ORM (支持 SQLite / PostgreSQL / MySQL)
+sqlalchemy
+
+
+loguru
+fastapi
+python-multipart
+
+# Nacos服务注册
+nacos-sdk-python==0.1.17
+
+
+# 向量数据库
+pymilvus
+chromadb
+langchain-chroma
+
+# Excel 文件解析
+openpyxl
+xlrd

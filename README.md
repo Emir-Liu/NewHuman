@@ -1,21 +1,18 @@
-# NewHuman
 
-> 使用外部大模型，让大模型自己管理自己的记忆
+# 基于Langgraph实现的dify接口实现项目
 
-## 核心功能
+基于Langgraph框架，实现类dify框架接口。
 
-- 大模型在回答问题时，不断调用已有记忆
-- 大模型自己判断哪些信息值得记住
-- 记忆存入向量数据库，支持检索
+# 执行脚本
 
-## 使用流程
+## 启动服务
+```bash
+cd code/app
+python -m main
+```
 
-1. 用户提问
-2. 大模型检索相关记忆
-3. 大模型结合记忆生成回答
-4. 大模型判断是否需要更新记忆
-
-## 技术栈
-
-- LLM：OpenAI / DeepSeek
-- 向量数据库：Chroma / Milvus
+## 启动智能体CLI
+```bash
+cd code/app
+python -m func.graph.run
+```
