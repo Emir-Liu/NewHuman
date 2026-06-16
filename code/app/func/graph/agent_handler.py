@@ -27,21 +27,6 @@ def _safe_serialize_state(state: Dict[str, Any]) -> Dict[str, Any]:
     """安全序列化 state，处理不可 JSON 序列化的字段（如 messages）"""
     safe = {}
     for key, value in state.items():
-        # # messages 字段包含 LangChain 消息对象，转换为可读格式
-        # if key == "messages" and isinstance(value, list):
-        #     safe_msgs = []
-        #     for msg in value:
-        #         if isinstance(msg, BaseMessage):
-        #             safe_msgs.append({
-        #                 "role": msg.type,
-        #                 "content": msg.content[:200] if isinstance(msg.content, str) else str(msg.content)[:200],
-        #             })
-        #         elif isinstance(msg, dict):
-        #             safe_msgs.append(msg)
-        #         else:
-        #             safe_msgs.append(str(msg))
-        #     safe[key] = safe_msgs
-        # else:
         try:
             json.dumps(value)
             safe[key] = value
