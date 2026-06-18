@@ -8,5 +8,7 @@ data/
 .venv/
 .*
 
+workspace/
+
 !.gitignore
 !.env.demo
