@@ -56,6 +56,14 @@ class ContextAssembler:
 |------|--------|----------|
 {tool_table}
 {notes_block}
+## 错误自愈
+
+- 工具返回 `exit_code` 非 0、stderr 报错、或以 `Error:` 开头时，视为**执行失败**。
+- 失败后：根据 ToolMessage 中的输出**自行分析原因**，修正命令或参数，**再次调用工具**重试。
+- 同一用户请求内，最多自主重试 **3 次**；仍失败再向用户说明原因和已尝试的步骤。
+- 用户已说「帮我执行 / 你来做 / 直接跑」时：**立即执行**，禁止问「是否继续」「请确认」。
+- 禁止用 Markdown 代码块假装已执行；**只有工具返回的结果**才算真实输出。
+
 **回复语言：** 默认使用中文（见 USER.md）。"""
 
     def assemble(self, *, include_bootstrap: bool = True) -> SystemMessage:

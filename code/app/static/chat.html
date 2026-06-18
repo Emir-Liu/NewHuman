@@ -8,13 +8,19 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
   <style>
     * { box-sizing: border-box; }
+    html {
+      height: 100%;
+    }
     body {
       font-family: system-ui, sans-serif;
       margin: 0;
       background: #f3f4f6;
-      height: 100vh;
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
     header {
       background: #111827;
@@ -41,10 +47,15 @@
     .header-btn:hover { background: #4b5563; }
     .header-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     #log {
-      flex: 1;
+      flex: 1 1 auto;
       min-height: 0;
+      overflow-x: hidden;
       overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
       padding: 16px;
+      padding-bottom: 32px;
+      scroll-padding-bottom: 24px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -260,10 +271,41 @@
     let conversationId = '';
     let busy = false;
     let activeStreamId = 0;
+    let stickToBottom = true;
 
-    function scrollToBottom() {
-      log.scrollTop = log.scrollHeight;
+    log.addEventListener('scroll', () => {
+      stickToBottom = log.scrollHeight - log.scrollTop - log.clientHeight <= 64;
+    }, { passive: true });
+
+    function scrollToBottom(force) {
+      if (!force && !stickToBottom && !busy) return;
+      requestAnimationFrame(() => {
+        log.scrollTop = log.scrollHeight;
+        requestAnimationFrame(() => {
+          log.scrollTop = log.scrollHeight;
+          const last = log.lastElementChild;
+          if (last) {
+            last.scrollIntoView({ block: 'end', behavior: 'auto' });
+          }
+        });
+      });
     }
+
+    const logResizeObserver = new ResizeObserver(() => {
+      if (busy || stickToBottom) scrollToBottom(true);
+    });
+    logResizeObserver.observe(log);
+
+    const logContentObserver = new MutationObserver(() => {
+      if (busy || stickToBottom) scrollToBottom(true);
+    });
+    logContentObserver.observe(log, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['open'],
+    });
 
     function escapeHtml(text) {
       return String(text)
@@ -424,6 +466,7 @@
       if (!query || busy) return;
 
       busy = true;
+      stickToBottom = true;
       sendBtn.disabled = true;
       input.value = '';
 
@@ -499,6 +542,7 @@
         if (botEl) {
           finishBotBubble(botEl, '*(empty response)*');
         }
+        scrollToBottom(true);
       } catch (e) {
         if (streamId === activeStreamId) {
           finishBotBubble(ensureBotBubble());
@@ -508,10 +552,13 @@
         if (streamId === activeStreamId) {
           busy = false;
           sendBtn.disabled = false;
+          scrollToBottom(true);
           input.focus();
         }
       }
     }
+
+    log.addEventListener('toggle', () => scrollToBottom(stickToBottom), true);
 
     sendBtn.addEventListener('click', sendMessage);
     newChatBtn.addEventListener('click', startNewChat);
