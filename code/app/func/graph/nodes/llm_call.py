@@ -9,6 +9,7 @@ import uuid
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from config.llm_config import LLMConfig
+from config.agent_config import get_agent_config
 from func.graph.state.state import WorkflowState
 from func.graph.tools.tool_registry import (
     format_json_tool_call_example,
@@ -18,6 +19,7 @@ from func.graph.tools.tool_registry import (
     is_tool_allowed,
 )
 from func.graph.workspace.context_assembler import get_context_assembler
+from func.graph.utils.message_history import trim_to_last_turns
 from utils.llm.factory import LLMFactory
 from utils.logger_operator import LoguruOperator
 
@@ -92,12 +94,17 @@ def _prepare_messages(state: WorkflowState) -> list:
 
     if assembler.should_inject_bootstrap(messages):
         system = assembler.assemble(include_bootstrap=True)
-        messages = [system] + messages
     elif not any(isinstance(m, SystemMessage) for m in messages):
         system = assembler.assemble(include_bootstrap=False)
-        messages = [system] + messages
+    else:
+        system = None
 
-    return messages
+    max_turns = get_agent_config().max_history_turns
+    conv = trim_to_last_turns(messages, max_turns)
+
+    if system is not None:
+        return [system] + conv
+    return conv
 
 
 def _extract_text(content) -> str:
