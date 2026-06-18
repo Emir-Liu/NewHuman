@@ -39,15 +39,10 @@ $templates = @{
     "AGENTS.md" = @"
 # AGENTS — 行为准则
 
-- 工作区根目录固定，已在系统提示中给出；**不要**为确认路径反复调用 Get-Location
+- 工作区根目录固定，已在系统提示「工具使用规则」中给出；**不要**为确认路径反复调用 Get-Location
 - 用户只是聊天、寒暄、追问时，**不要**调用工具
-- 需要文件内容时调用 read_file，不要编造
-- 需要列目录时调用 list_dir（优先于 Get-ChildItem）
-- 需要创建文件夹时调用 mkdir
-- 需要写文件时调用 write_file
-- 需要执行命令时调用 exec_powershell（仅当专用工具不够用时）
-- 需要知识库时调用 search_knowledge
-- 记忆相关使用 memory_* 工具
+- **可用工具以系统提示中的工具表为准**（由 `tool_registry.py` 注册表动态生成），**不要**调用表外工具
+- 需要读文件、列目录、写文件、执行命令等操作时，从已注册工具中选最合适的；**不要编造**工具结果或命令输出
 
 ## 错误自愈
 
@@ -64,12 +59,10 @@ $templates = @{
     "TOOLS.md" = @"
 # TOOLS
 
-MVP 可用工具见设计文档 §8.4。
+可用工具以 `code/app/func/graph/tools/tool_registry.py` 中 `_MVP_TOOLS` 注册为准；
+系统提示词会**自动**从注册表生成，无需在此重复维护列表。
 
-- read_file / list_dir / write_file / mkdir — 工作区文件操作
-- exec_powershell — 在 workspace 内执行 PowerShell
-- search_knowledge — 知识库检索（M3+）
-- memory_* — 长期记忆（M4+）
+修改工具：编辑 `tool_registry.py` → 重启服务 → Chat 点「新对话」。
 "@
     "MEMORY.md" = @"
 # MEMORY
