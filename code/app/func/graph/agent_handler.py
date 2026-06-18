@@ -16,7 +16,7 @@ import asyncio
 import json
 import uuid
 import time
-from typing import AsyncGenerator, Dict, Any, Optional, List
+from typing import AsyncGenerator, Dict, Any, Optional, List, Union
 
 from langchain_core.messages import HumanMessage, AIMessage
 
@@ -47,6 +47,10 @@ class AgentHandler:
         """
         self._agent = agent
 
+    def reset_agent(self) -> None:
+        """丢弃已编译图，下次调用时重新 build（热重载后可用）。"""
+        self._agent = None
+
     @property
     def agent(self):
         """懒加载 agent，首次访问时构建"""
@@ -59,7 +63,7 @@ class AgentHandler:
         user_input: str,
         conversation_id: str,
         stop_flag: Optional[asyncio.Event] = None,
-    ) -> AsyncGenerator[Dict[str, Any], None]:
+    ) -> AsyncGenerator[Union[str, Dict[str, Any]], None]:
         """
         流式对话
 
@@ -80,19 +84,23 @@ class AgentHandler:
         full_answer = ""
 
         async for chunk in self.agent.astream(
-            {"messages": input_messages},
+            {"messages": input_messages, "query": user_input},
             config=config,
             stream_mode="custom",
         ):
-            # # 检查停止标志
-            # if stop_flag and stop_flag.is_set():
-            #     break
-
-            # if hasattr(chunk, "content") and chunk.content:
-            #     delta = chunk.content
-            #     full_answer += delta
-
+            if stop_flag and stop_flag.is_set():
+                break
+            if isinstance(chunk, dict):
+                if chunk.get("type") == "tool_call":
+                    yield chunk
+            elif isinstance(chunk, str) and chunk:
+                full_answer += chunk
                 yield chunk
+            elif chunk is not None and not isinstance(chunk, str):
+                text = str(chunk)
+                if text:
+                    full_answer += text
+                    yield text
 
     async def blocking_chat(
         self,
@@ -114,12 +122,19 @@ class AgentHandler:
         config = {"configurable": {"thread_id": conversation_id}}
         input_messages = [HumanMessage(content=user_input)]
         result = await self.agent.ainvoke(
-            {"messages": input_messages},
+            {"messages": input_messages, "query": user_input},
             config=config,
         )
 
-        # 提取最后一条 AI 消息的内容作为回复
-        answer = result.get("response", "")
+        answer = result.get("response") or ""
+        if answer:
+            return answer
+
+        messages = result.get("messages") or []
+        for msg in reversed(messages):
+            if isinstance(msg, AIMessage) and msg.content:
+                if not getattr(msg, "tool_calls", None):
+                    return msg.content
         return answer
 
     def get_conversation_variables(

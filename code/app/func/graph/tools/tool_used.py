@@ -1,11 +1,5 @@
-# from graph.tools.vectorstore_tool import add_document, delete_document, update_document, search_knowledge
-from func.graph.tools.terminal_tool import execute_command
-from func.graph.tools.calculator_tool import add, multiply, divide
+from func.graph.tools.tool_registry import get_allowed_tools, invoke_tool, tools_by_name
 
-# tools = [add_document, delete_document, update_document, search_knowledge, execute_command]
-tools = [add, multiply, divide]
+tools = get_allowed_tools()
 
-tools_by_name = {tool.name: tool for tool in tools}
-
-# 创建 ToolExecutor，自动处理工具路由
-# tool_executor = ToolExecutor(tools)
+__all__ = ["tools", "tools_by_name", "get_allowed_tools", "invoke_tool"]

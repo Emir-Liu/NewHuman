@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NewHuman Chat</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      background: #f3f4f6;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #111827;
+      color: #fff;
+      padding: 12px 16px;
+      font-weight: 600;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .header-btn {
+      padding: 6px 12px;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      background: #374151;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .header-btn:hover { background: #4b5563; }
+    .header-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #log {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .msg {
+      flex: 0 0 auto;
+      width: fit-content;
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      word-break: break-word;
+      line-height: 1.5;
+    }
+    .user { align-self: flex-end; background: #2563eb; color: #fff; white-space: pre-wrap; }
+    .bot {
+      align-self: flex-start;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      min-height: 1.5em;
+    }
+    .bot .cursor {
+      display: inline-block;
+      color: #2563eb;
+      animation: blink 1s step-end infinite;
+    }
+    .md-body { white-space: normal; font-size: 15px; }
+    .md-body > :first-child { margin-top: 0; }
+    .md-body > :last-child { margin-bottom: 0; }
+    .md-body p { margin: 0.45em 0; }
+    .md-body h1, .md-body h2, .md-body h3 { margin: 0.8em 0 0.4em; line-height: 1.3; }
+    .md-body h1 { font-size: 1.35em; }
+    .md-body h2 { font-size: 1.2em; }
+    .md-body h3 { font-size: 1.05em; }
+    .md-body ul, .md-body ol { margin: 0.45em 0; padding-left: 1.4em; }
+    .md-body li { margin: 0.2em 0; }
+    .md-body blockquote {
+      margin: 0.5em 0;
+      padding: 0.4em 0.8em;
+      border-left: 3px solid #d1d5db;
+      color: #4b5563;
+      background: #f9fafb;
+    }
+    .md-body pre {
+      margin: 0.5em 0;
+      padding: 10px 12px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .md-body code {
+      background: #f3f4f6;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      font-size: 0.92em;
+      font-family: ui-monospace, Consolas, monospace;
+    }
+    .md-body pre code { background: none; padding: 0; }
+    .md-body table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0.5em 0;
+      font-size: 14px;
+    }
+    .md-body th, .md-body td {
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    .md-body th { background: #f9fafb; }
+    .md-body a { color: #2563eb; }
+    .md-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 0.8em 0; }
+    .tool {
+      align-self: stretch;
+      width: auto;
+      max-width: 100%;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      padding: 0;
+      overflow: hidden;
+    }
+    .tool-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fef3c7;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #92400e;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    .tool-header::-webkit-details-marker { display: none; }
+    .tool-header::before {
+      content: '▸';
+      font-size: 12px;
+      color: #b45309;
+      transition: transform 0.15s ease;
+    }
+    .tool[open] .tool-header::before { transform: rotate(90deg); }
+    .tool[open] .tool-header { border-bottom: 1px solid #fcd34d; }
+    .tool-body { padding: 0; }
+    .tool-section {
+      border-top: 1px solid #fde68a;
+    }
+    .tool-section > summary.tool-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #b45309;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      background: #fffdf5;
+    }
+    .tool-section > summary.tool-label::-webkit-details-marker { display: none; }
+    .tool-section > summary.tool-label::before {
+      content: '▸';
+      font-size: 11px;
+      color: #d97706;
+      transition: transform 0.15s ease;
+    }
+    .tool-section[open] > summary.tool-label::before { transform: rotate(90deg); }
+    .tool-section-content {
+      padding: 0 12px 10px;
+    }
+    .tool .json-pre {
+      margin: 0;
+      padding: 8px;
+      background: #fff;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: ui-monospace, Consolas, monospace;
+    }
+    .tool .md-body {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #fff;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .sys {
+      align-self: center;
+      color: #6b7280;
+      font-size: 13px;
+      background: transparent;
+      padding: 0;
+    }
+    footer {
+      flex-shrink: 0;
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      background: #fff;
+      border-top: 1px solid #e5e7eb;
+    }
+    #input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    a { color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <header>
+    <span>NewHuman Chat · <a href="/" style="color:#93c5fd;font-weight:400">Home</a></span>
+    <div class="header-actions">
+      <button type="button" id="newChat" class="header-btn" title="清空界面并开始新对话">新对话</button>
+    </div>
+  </header>
+  <div id="log"></div>
+  <footer>
+    <input id="input" type="text" placeholder="输入消息，Enter 发送" autocomplete="off" />
+    <button id="send">发送</button>
+  </footer>
+  <script>
+    marked.setOptions({ breaks: true, gfm: true });
+
+    const log = document.getElementById('log');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const newChatBtn = document.getElementById('newChat');
+    let conversationId = '';
+    let busy = false;
+    let activeStreamId = 0;
+
+    function scrollToBottom() {
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderMarkdown(source) {
+      const raw = source || '';
+      if (!raw.trim()) return '';
+      const html = marked.parse(raw);
+      return DOMPurify.sanitize(html);
+    }
+
+    function setMarkdownBody(container, source) {
+      let body = container.querySelector('.md-body');
+      if (!body) {
+        body = document.createElement('div');
+        body.className = 'md-body';
+        container.insertBefore(body, container.firstChild);
+      }
+      body.innerHTML = renderMarkdown(source);
+      return body;
+    }
+
+    function formatJson(value) {
+      if (value == null) return '';
+      if (typeof value === 'string') {
+        try {
+          return JSON.stringify(JSON.parse(value), null, 2);
+        } catch {
+          return value;
+        }
+      }
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch {
+        return String(value);
+      }
+    }
+
+    function addMsg(text, cls) {
+      const el = document.createElement('div');
+      el.className = 'msg ' + cls;
+      if (cls === 'bot') {
+        el._markdown = text;
+        setMarkdownBody(el, text);
+      } else {
+        el.textContent = text;
+      }
+      log.appendChild(el);
+      scrollToBottom();
+      return el;
+    }
+
+    function formatToolResult(result) {
+      const text = String(result ?? '');
+      if (/^#{1,6}\s|^\s*[-*]\s|^```/m.test(text)) return text;
+      return '```\n' + text + '\n```';
+    }
+
+    function addToolCard(tool, args, result, beforeEl) {
+      const el = document.createElement('details');
+      el.className = 'msg tool';
+      const resultText = formatToolResult(result);
+      el.innerHTML =
+        '<summary class="tool-header">Tool: ' + escapeHtml(tool || 'unknown') + '</summary>' +
+        '<div class="tool-body">' +
+        '<details class="tool-section">' +
+        '<summary class="tool-label">参数 (args)</summary>' +
+        '<div class="tool-section-content"><pre class="json-pre">' + escapeHtml(formatJson(args)) + '</pre></div>' +
+        '</details>' +
+        '<details class="tool-section">' +
+        '<summary class="tool-label">返回 (result)</summary>' +
+        '<div class="tool-section-content"><div class="md-body">' + renderMarkdown(resultText) + '</div></div>' +
+        '</details></div>';
+      if (beforeEl && beforeEl.parentNode === log) {
+        log.insertBefore(el, beforeEl);
+      } else {
+        log.appendChild(el);
+      }
+      scrollToBottom();
+      return el;
+    }
+
+    function createBotBubble() {
+      const el = document.createElement('div');
+      el.className = 'msg bot streaming';
+      el._markdown = '';
+      const body = document.createElement('div');
+      body.className = 'md-body';
+      el.appendChild(body);
+      const cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      cursor.textContent = '▋';
+      el.appendChild(cursor);
+      log.appendChild(el);
+      scrollToBottom();
+      return el;
+    }
+
+    function finishBotBubble(el, emptyText) {
+      if (!el) return;
+      el.classList.remove('streaming');
+      const cursor = el.querySelector('.cursor');
+      if (cursor) cursor.remove();
+      if (emptyText && !(el._markdown || '').trim()) {
+        el._markdown = emptyText;
+        setMarkdownBody(el, emptyText);
+      }
+    }
+
+    function setBotError(el, message) {
+      if (!el) return;
+      el._markdown = message;
+      setMarkdownBody(el, message);
+    }
+
+    function nextFrame() {
+      return new Promise(resolve => requestAnimationFrame(resolve));
+    }
+
+    async function appendAnswer(el, text) {
+      el._markdown = (el._markdown || '') + text;
+      setMarkdownBody(el, el._markdown);
+      scrollToBottom();
+      await nextFrame();
+    }
+
+    function parseSseEvents(buffer) {
+      const events = [];
+      const parts = buffer.split('\n\n');
+      const rest = parts.pop() || '';
+      for (const block of parts) {
+        for (const line of block.split('\n')) {
+          if (line.startsWith('data: ')) {
+            events.push(line.slice(6).trim());
+          }
+        }
+      }
+      return { events, rest };
+    }
+
+    function startNewChat() {
+      activeStreamId++;
+      conversationId = '';
+      busy = false;
+      sendBtn.disabled = false;
+      log.innerHTML = '';
+      addMsg('New conversation started.', 'sys');
+      input.focus();
+    }
+
+    async function sendMessage() {
+      const query = input.value.trim();
+      if (!query || busy) return;
+
+      busy = true;
+      sendBtn.disabled = true;
+      input.value = '';
+
+      const streamId = ++activeStreamId;
+      addMsg(query, 'user');
+      let botEl = null;
+
+      function ensureBotBubble() {
+        if (!botEl) botEl = createBotBubble();
+        return botEl;
+      }
+
+      try {
+        const res = await fetch('/v1/chat-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            response_mode: 'streaming',
+            conversation_id: conversationId,
+            user: 'web-user',
+            inputs: {}
+          })
+        });
+
+        if (streamId !== activeStreamId) return;
+
+        if (!res.ok) {
+          finishBotBubble(ensureBotBubble());
+          setBotError(botEl, '**Error:** HTTP ' + res.status);
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (streamId !== activeStreamId) {
+            await reader.cancel();
+            return;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const parsed = parseSseEvents(buffer);
+          buffer = parsed.rest;
+
+          for (const raw of parsed.events) {
+            if (!raw) continue;
+            let evt;
+            try {
+              evt = JSON.parse(raw);
+            } catch {
+              continue;
+            }
+            if (evt.conversation_id) conversationId = evt.conversation_id;
+
+            if (evt.event === 'tool_call') {
+              addToolCard(evt.tool, evt.args, evt.result, botEl);
+            }
+            if (evt.event === 'message' && evt.answer != null && evt.answer !== '') {
+              await appendAnswer(ensureBotBubble(), String(evt.answer));
+            }
+            if (evt.event === 'error') {
+              finishBotBubble(ensureBotBubble());
+              setBotError(botEl, '**Error:** ' + (evt.message || 'Unknown error'));
+            }
+          }
+        }
+
+        if (botEl) {
+          finishBotBubble(botEl, '*(empty response)*');
+        }
+      } catch (e) {
+        if (streamId === activeStreamId) {
+          finishBotBubble(ensureBotBubble());
+          if (botEl) setBotError(botEl, '**Request failed:** ' + e.message);
+        }
+      } finally {
+        if (streamId === activeStreamId) {
+          busy = false;
+          sendBtn.disabled = false;
+          input.focus();
+        }
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    newChatBtn.addEventListener('click', startNewChat);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+    addMsg('Ready. Responses render as **Markdown**.', 'sys');
+    input.focus();
+  </script>
+</body>
+</html>

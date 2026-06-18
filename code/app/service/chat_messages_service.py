@@ -97,6 +97,23 @@ class ChatService:
                     }
                     return
                 
+                if not agent_event:
+                    continue
+
+                if isinstance(agent_event, dict) and agent_event.get("type") == "tool_call":
+                    yield {
+                        "event": "tool_call",
+                        "task_id": task_id,
+                        "id": str(uuid.uuid4()),
+                        "message_id": message_id,
+                        "conversation_id": conversation_id,
+                        "tool": agent_event.get("tool", ""),
+                        "args": agent_event.get("args") or {},
+                        "result": agent_event.get("result", ""),
+                        "created_at": created_at,
+                    }
+                    continue
+
                 # 发送消息片段
                 yield {
                     "event": "message",

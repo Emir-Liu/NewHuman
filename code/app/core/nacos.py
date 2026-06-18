@@ -63,9 +63,12 @@ async def register_service(port: int) -> None:
     global _nacos_client, _heartbeat_task, _nacos_config
 
     try:
-        # 初始化Nacos配置
         if _nacos_config is None:
             _nacos_config = NacosConfig()
+
+        if not _nacos_config.enabled:
+            logger.info("Nacos disabled (NACOS_ENABLED=false), skip registration")
+            return
 
         cfg = _nacos_config
 
@@ -141,6 +144,11 @@ async def register_service(port: int) -> None:
 async def deregister_service(port: int) -> None:
     """Deregister service from Nacos."""
     global _heartbeat_task, _nacos_config
+
+    if _nacos_config is None:
+        _nacos_config = NacosConfig()
+    if not _nacos_config.enabled:
+        return
 
     if _heartbeat_task:
         _heartbeat_task.cancel()

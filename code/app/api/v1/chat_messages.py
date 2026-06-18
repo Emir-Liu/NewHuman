@@ -3,6 +3,9 @@
 参考 Dify API: https://docs.dify.ai/api-reference/chats/send-chat-message
 """
 
+import json
+import asyncio
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
@@ -54,10 +57,10 @@ async def send_chat_message(
     if request.response_mode == "streaming":
         # 流式响应
         async def event_generator():
+            yield ": stream-start\n\n"
             async for event in chat_service.generate_streaming_response(task_id, request):
-                # 将事件转换为 SSE 格式
-                event_json = str(event).replace("'", '"')
-                yield f"data: {event_json}\n\n"
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                await asyncio.sleep(0)
         
         return StreamingResponse(
             event_generator(),
