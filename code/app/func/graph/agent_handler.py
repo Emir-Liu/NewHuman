@@ -21,6 +21,7 @@ from typing import AsyncGenerator, Dict, Any, Optional, List, Union
 from langchain_core.messages import HumanMessage, AIMessage
 
 from func.graph.build import build_graph
+from func.graph.conversation_memory import save_conversation_turn
 
 
 def _safe_serialize_state(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -50,6 +51,12 @@ class AgentHandler:
     def reset_agent(self) -> None:
         """丢弃已编译图，下次调用时重新 build（热重载后可用）。"""
         self._agent = None
+        try:
+            from func.graph.tools.subagent_tool import reset_subagent_graph_cache
+
+            reset_subagent_graph_cache()
+        except ImportError:
+            pass
 
     @property
     def agent(self):
@@ -102,6 +109,9 @@ class AgentHandler:
                     full_answer += text
                     yield text
 
+        if full_answer.strip() or user_input.strip():
+            save_conversation_turn(conversation_id, user_input, full_answer)
+
     async def blocking_chat(
         self,
         user_input: str,
@@ -127,14 +137,15 @@ class AgentHandler:
         )
 
         answer = result.get("response") or ""
-        if answer:
-            return answer
-
-        messages = result.get("messages") or []
-        for msg in reversed(messages):
-            if isinstance(msg, AIMessage) and msg.content:
-                if not getattr(msg, "tool_calls", None):
-                    return msg.content
+        if not answer:
+            messages = result.get("messages") or []
+            for msg in reversed(messages):
+                if isinstance(msg, AIMessage) and msg.content:
+                    if not getattr(msg, "tool_calls", None):
+                        answer = msg.content
+                        break
+        if answer.strip() or user_input.strip():
+            save_conversation_turn(conversation_id, user_input, answer)
         return answer
 
     def get_conversation_variables(

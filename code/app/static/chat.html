@@ -8,9 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
   <style>
     * { box-sizing: border-box; }
-    html {
-      height: 100%;
-    }
+    html { height: 100%; }
     body {
       font-family: system-ui, sans-serif;
       margin: 0;
@@ -33,6 +31,8 @@
       justify-content: space-between;
       gap: 12px;
     }
+    .header-title { display: flex; flex-direction: column; gap: 2px; }
+    .header-title small { font-weight: 400; font-size: 12px; color: #9ca3af; }
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .header-btn {
       padding: 6px 12px;
@@ -46,9 +46,83 @@
     }
     .header-btn:hover { background: #4b5563; }
     .header-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .header-btn.active { background: #2563eb; border-color: #3b82f6; }
+    .layout {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+    #capPanel {
+      width: 300px;
+      flex-shrink: 0;
+      background: #fff;
+      border-right: 1px solid #e5e7eb;
+      overflow-y: auto;
+      padding: 14px;
+      display: none;
+    }
+    #capPanel.open { display: block; }
+    @media (max-width: 768px) {
+      #capPanel.open {
+        position: absolute;
+        z-index: 20;
+        top: 52px;
+        left: 0;
+        bottom: 0;
+        box-shadow: 4px 0 24px rgba(0,0,0,.12);
+      }
+    }
+    .cap-section { margin-bottom: 18px; }
+    .cap-section h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .cap-group-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      margin: 10px 0 6px;
+    }
+    .cap-tool {
+      font-size: 13px;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+    }
+    .cap-tool code { font-size: 12px; color: #1d4ed8; }
+    .cap-tool span { display: block; color: #6b7280; font-size: 12px; margin-top: 2px; }
+    .cap-skill {
+      font-size: 13px;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+    }
+    .cap-skill strong { color: #166534; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+      cursor: pointer;
+    }
+    .chip:hover { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+    .chip:disabled { opacity: 0.5; cursor: not-allowed; }
     #log {
       flex: 1 1 auto;
       min-height: 0;
+      min-width: 0;
       overflow-x: hidden;
       overflow-y: auto;
       overscroll-behavior: contain;
@@ -60,6 +134,20 @@
       flex-direction: column;
       gap: 12px;
     }
+    .welcome-card {
+      align-self: stretch;
+      max-width: 100%;
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 16px 18px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #1f2937;
+    }
+    .welcome-card h2 { margin: 0 0 8px; font-size: 16px; color: #1e40af; }
+    .welcome-card ul { margin: 8px 0 0; padding-left: 1.2em; }
+    .welcome-card li { margin: 4px 0; }
     .msg {
       flex: 0 0 auto;
       width: fit-content;
@@ -86,18 +174,7 @@
     .md-body > :last-child { margin-bottom: 0; }
     .md-body p { margin: 0.45em 0; }
     .md-body h1, .md-body h2, .md-body h3 { margin: 0.8em 0 0.4em; line-height: 1.3; }
-    .md-body h1 { font-size: 1.35em; }
-    .md-body h2 { font-size: 1.2em; }
-    .md-body h3 { font-size: 1.05em; }
     .md-body ul, .md-body ol { margin: 0.45em 0; padding-left: 1.4em; }
-    .md-body li { margin: 0.2em 0; }
-    .md-body blockquote {
-      margin: 0.5em 0;
-      padding: 0.4em 0.8em;
-      border-left: 3px solid #d1d5db;
-      color: #4b5563;
-      background: #f9fafb;
-    }
     .md-body pre {
       margin: 0.5em 0;
       padding: 10px 12px;
@@ -106,7 +183,6 @@
       border-radius: 8px;
       overflow-x: auto;
       font-size: 13px;
-      line-height: 1.45;
     }
     .md-body code {
       background: #f3f4f6;
@@ -116,38 +192,29 @@
       font-family: ui-monospace, Consolas, monospace;
     }
     .md-body pre code { background: none; padding: 0; }
-    .md-body table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 0.5em 0;
-      font-size: 14px;
-    }
-    .md-body th, .md-body td {
-      border: 1px solid #e5e7eb;
-      padding: 6px 8px;
-      text-align: left;
-    }
-    .md-body th { background: #f9fafb; }
-    .md-body a { color: #2563eb; }
-    .md-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 0.8em 0; }
     .tool {
       align-self: stretch;
       width: auto;
       max-width: 100%;
-      background: #fffbeb;
-      border: 1px solid #fcd34d;
       padding: 0;
       overflow: hidden;
+      border-radius: 10px;
     }
+    .tool-terminal { background: #fffbeb; border: 1px solid #fcd34d; }
+    .tool-terminal .tool-header { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .tool-memory { background: #eff6ff; border: 1px solid #93c5fd; }
+    .tool-memory .tool-header { background: #dbeafe; color: #1e40af; }
+    .tool-web { background: #ecfdf5; border: 1px solid #6ee7b7; }
+    .tool-web .tool-header { background: #d1fae5; color: #065f46; }
+    .tool-subagent { background: #f5f3ff; border: 1px solid #c4b5fd; }
+    .tool-subagent .tool-header { background: #ede9fe; color: #5b21b6; }
     .tool-header {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: #fef3c7;
       padding: 8px 12px;
       font-weight: 600;
       font-size: 14px;
-      color: #92400e;
       cursor: pointer;
       list-style: none;
       user-select: none;
@@ -156,15 +223,18 @@
     .tool-header::before {
       content: '▸';
       font-size: 12px;
-      color: #b45309;
       transition: transform 0.15s ease;
     }
     .tool[open] .tool-header::before { transform: rotate(90deg); }
-    .tool[open] .tool-header { border-bottom: 1px solid #fcd34d; }
-    .tool-body { padding: 0; }
-    .tool-section {
-      border-top: 1px solid #fde68a;
+    .tool-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.06);
     }
+    .tool-body { padding: 0; }
+    .tool-section { border-top: 1px solid rgba(0,0,0,.08); }
     .tool-section > summary.tool-label {
       display: flex;
       align-items: center;
@@ -172,33 +242,26 @@
       padding: 8px 12px;
       font-size: 12px;
       font-weight: 600;
-      color: #b45309;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
       cursor: pointer;
       list-style: none;
       user-select: none;
-      background: #fffdf5;
+      background: rgba(255,255,255,.5);
     }
     .tool-section > summary.tool-label::-webkit-details-marker { display: none; }
     .tool-section > summary.tool-label::before {
       content: '▸';
       font-size: 11px;
-      color: #d97706;
       transition: transform 0.15s ease;
     }
     .tool-section[open] > summary.tool-label::before { transform: rotate(90deg); }
-    .tool-section-content {
-      padding: 0 12px 10px;
-    }
+    .tool-section-content { padding: 0 12px 10px; }
     .tool .json-pre {
       margin: 0;
       padding: 8px;
       background: #fff;
-      border: 1px solid #fde68a;
+      border: 1px solid rgba(0,0,0,.1);
       border-radius: 6px;
       font-size: 13px;
-      line-height: 1.45;
       white-space: pre-wrap;
       word-break: break-word;
       max-height: 200px;
@@ -210,7 +273,7 @@
       overflow-y: auto;
       padding: 8px;
       background: #fff;
-      border: 1px solid #fde68a;
+      border: 1px solid rgba(0,0,0,.1);
       border-radius: 6px;
     }
     @keyframes blink { 50% { opacity: 0; } }
@@ -251,12 +314,19 @@
 </head>
 <body>
   <header>
-    <span>NewHuman Chat · <a href="/" style="color:#93c5fd;font-weight:400">Home</a></span>
+    <div class="header-title">
+      <span>NewHuman Chat · <a href="/" style="color:#93c5fd;font-weight:400">Home</a></span>
+      <small id="headerStatus">加载能力信息…</small>
+    </div>
     <div class="header-actions">
+      <button type="button" id="toggleCap" class="header-btn" title="查看工具、Skills 与示例">能力</button>
       <button type="button" id="newChat" class="header-btn" title="清空界面并开始新对话">新对话</button>
     </div>
   </header>
-  <div id="log"></div>
+  <div class="layout">
+    <aside id="capPanel" aria-label="Agent 能力面板"></aside>
+    <div id="log"></div>
+  </div>
   <footer>
     <input id="input" type="text" placeholder="输入消息，Enter 发送" autocomplete="off" />
     <button id="send">发送</button>
@@ -265,6 +335,9 @@
     marked.setOptions({ breaks: true, gfm: true });
 
     const log = document.getElementById('log');
+    const capPanel = document.getElementById('capPanel');
+    const toggleCapBtn = document.getElementById('toggleCap');
+    const headerStatus = document.getElementById('headerStatus');
     const input = document.getElementById('input');
     const sendBtn = document.getElementById('send');
     const newChatBtn = document.getElementById('newChat');
@@ -272,6 +345,21 @@
     let busy = false;
     let activeStreamId = 0;
     let stickToBottom = true;
+    let capabilities = null;
+
+    const TOOL_META = {
+      exec_powershell: { category: 'terminal', badge: '终端', label: 'PowerShell' },
+      read_lines: { category: 'terminal', badge: '行读写', label: '按行读取' },
+      edit_lines: { category: 'terminal', badge: '行读写', label: '按行编辑' },
+      memory_append: { category: 'memory', badge: '记忆', label: '写入记忆' },
+      memory_read: { category: 'memory', badge: '记忆', label: '读取记忆' },
+      memory_get: { category: 'memory', badge: '记忆', label: '读取记忆' },
+      memory_search: { category: 'memory', badge: '记忆', label: '搜索记忆' },
+      memory_update_summary: { category: 'memory', badge: '记忆', label: '更新摘要' },
+      fetch_url: { category: 'web', badge: '网络', label: '抓取网页' },
+      list_agent_roles: { category: 'subagent', badge: '多 Agent', label: '查看角色' },
+      delegate_subagent: { category: 'subagent', badge: '多 Agent', label: '委派子 Agent' },
+    };
 
     log.addEventListener('scroll', () => {
       stickToBottom = log.scrollHeight - log.scrollTop - log.clientHeight <= 64;
@@ -284,42 +372,24 @@
         requestAnimationFrame(() => {
           log.scrollTop = log.scrollHeight;
           const last = log.lastElementChild;
-          if (last) {
-            last.scrollIntoView({ block: 'end', behavior: 'auto' });
-          }
+          if (last) last.scrollIntoView({ block: 'end', behavior: 'auto' });
         });
       });
     }
 
-    const logResizeObserver = new ResizeObserver(() => {
-      if (busy || stickToBottom) scrollToBottom(true);
-    });
-    logResizeObserver.observe(log);
-
-    const logContentObserver = new MutationObserver(() => {
-      if (busy || stickToBottom) scrollToBottom(true);
-    });
-    logContentObserver.observe(log, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ['open'],
+    new ResizeObserver(() => { if (busy || stickToBottom) scrollToBottom(true); }).observe(log);
+    new MutationObserver(() => { if (busy || stickToBottom) scrollToBottom(true); }).observe(log, {
+      childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['open'],
     });
 
     function escapeHtml(text) {
-      return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function renderMarkdown(source) {
       const raw = source || '';
       if (!raw.trim()) return '';
-      const html = marked.parse(raw);
-      return DOMPurify.sanitize(html);
+      return DOMPurify.sanitize(marked.parse(raw));
     }
 
     function setMarkdownBody(container, source) {
@@ -336,17 +406,9 @@
     function formatJson(value) {
       if (value == null) return '';
       if (typeof value === 'string') {
-        try {
-          return JSON.stringify(JSON.parse(value), null, 2);
-        } catch {
-          return value;
-        }
+        try { return JSON.stringify(JSON.parse(value), null, 2); } catch { return value; }
       }
-      try {
-        return JSON.stringify(value, null, 2);
-      } catch {
-        return String(value);
-      }
+      try { return JSON.stringify(value, null, 2); } catch { return String(value); }
     }
 
     function addMsg(text, cls) {
@@ -363,6 +425,80 @@
       return el;
     }
 
+    function addWelcomeCard(cap) {
+      const el = document.createElement('div');
+      el.className = 'welcome-card';
+      const groups = (cap && cap.tool_groups) || [];
+      const skillCount = (cap && cap.skills && cap.skills.length) || 0;
+      const items = groups.map(g => `<li><strong>${escapeHtml(g.label)}</strong>：${g.tools.map(t => `<code>${escapeHtml(t.name)}</code>`).join('、')}</li>`).join('');
+      el.innerHTML =
+        '<h2>👋 NewHuman 已就绪</h2>' +
+        '<p>支持 Markdown 回复；工具调用会以彩色卡片展示。点击右上角 <strong>能力</strong> 查看详情。</p>' +
+        (items ? '<ul>' + items + '</ul>' : '') +
+        (skillCount ? `<p>已加载 <strong>${skillCount}</strong> 个 Skill。</p>` : '') +
+        '<p style="margin:10px 0 0;font-size:13px;color:#6b7280">记忆文件：`MEMORY.md` · 日誌：`memory/` · 工作区操作走 `exec_powershell`</p>';
+      log.appendChild(el);
+      scrollToBottom();
+    }
+
+    function renderCapPanel(cap) {
+      if (!cap) return;
+      let html = '';
+
+      html += '<div class="cap-section"><h3>快捷示例</h3><div class="chip-row" id="chipRow">';
+      for (const p of cap.quick_prompts || []) {
+        html += `<button type="button" class="chip" data-prompt="${escapeHtml(p.text)}">${escapeHtml(p.label)}</button>`;
+      }
+      html += '</div></div>';
+
+      for (const g of cap.tool_groups || []) {
+        html += `<div class="cap-section"><h3>${escapeHtml(g.label)}</h3>`;
+        for (const t of g.tools) {
+          html += `<div class="cap-tool"><code>${escapeHtml(t.name)}</code><span>${escapeHtml(t.description)}</span></div>`;
+        }
+        html += '</div>';
+      }
+
+      if (cap.skills && cap.skills.length) {
+        html += '<div class="cap-section"><h3>Skills</h3>';
+        for (const s of cap.skills) {
+          html += `<div class="cap-skill"><strong>${escapeHtml(s.name)}</strong><br><span>${escapeHtml(s.description || '无描述')}</span></div>`;
+        }
+        html += '</div>';
+      }
+
+      html += `<div class="cap-section"><h3>工作区</h3><p style="font-size:12px;color:#6b7280;margin:0;word-break:break-all">${escapeHtml(cap.workspace_root || '')}</p></div>`;
+
+      capPanel.innerHTML = html;
+      capPanel.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          if (busy) return;
+          input.value = chip.getAttribute('data-prompt') || '';
+          input.focus();
+        });
+      });
+    }
+
+    async function loadCapabilities() {
+      try {
+        const res = await fetch('/v1/agent/capabilities');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        capabilities = await res.json();
+        renderCapPanel(capabilities);
+        const toolCount = (capabilities.tool_groups || []).reduce((n, g) => n + g.tools.length, 0);
+        headerStatus.textContent = `${toolCount} 个工具 · ${(capabilities.skills || []).length} 个 Skill`;
+        return capabilities;
+      } catch (e) {
+        headerStatus.textContent = '能力信息加载失败';
+        return null;
+      }
+    }
+
+    toggleCapBtn.addEventListener('click', () => {
+      capPanel.classList.toggle('open');
+      toggleCapBtn.classList.toggle('active', capPanel.classList.contains('open'));
+    });
+
     function formatToolResult(result) {
       const text = String(result ?? '');
       if (/^#{1,6}\s|^\s*[-*]\s|^```/m.test(text)) return text;
@@ -370,25 +506,22 @@
     }
 
     function addToolCard(tool, args, result, beforeEl) {
+      const meta = TOOL_META[tool] || { category: 'terminal', badge: '工具', label: tool || 'unknown' };
       const el = document.createElement('details');
-      el.className = 'msg tool';
+      el.className = 'msg tool tool-' + meta.category;
       const resultText = formatToolResult(result);
       el.innerHTML =
-        '<summary class="tool-header">Tool: ' + escapeHtml(tool || 'unknown') + '</summary>' +
-        '<div class="tool-body">' +
-        '<details class="tool-section">' +
-        '<summary class="tool-label">参数 (args)</summary>' +
-        '<div class="tool-section-content"><pre class="json-pre">' + escapeHtml(formatJson(args)) + '</pre></div>' +
-        '</details>' +
-        '<details class="tool-section">' +
-        '<summary class="tool-label">返回 (result)</summary>' +
-        '<div class="tool-section-content"><div class="md-body">' + renderMarkdown(resultText) + '</div></div>' +
-        '</details></div>';
-      if (beforeEl && beforeEl.parentNode === log) {
-        log.insertBefore(el, beforeEl);
-      } else {
-        log.appendChild(el);
-      }
+        '<summary class="tool-header">' +
+        '<span class="tool-badge">' + escapeHtml(meta.badge) + '</span>' +
+        escapeHtml(meta.label) +
+        ' <code style="font-weight:400;font-size:12px">' + escapeHtml(tool) + '</code>' +
+        '</summary><div class="tool-body">' +
+        '<details class="tool-section"><summary class="tool-label">参数 (args)</summary>' +
+        '<div class="tool-section-content"><pre class="json-pre">' + escapeHtml(formatJson(args)) + '</pre></div></details>' +
+        '<details class="tool-section"><summary class="tool-label">返回 (result)</summary>' +
+        '<div class="tool-section-content"><div class="md-body">' + renderMarkdown(resultText) + '</div></div></details></div>';
+      if (beforeEl && beforeEl.parentNode === log) log.insertBefore(el, beforeEl);
+      else log.appendChild(el);
       scrollToBottom();
       return el;
     }
@@ -426,15 +559,11 @@
       setMarkdownBody(el, message);
     }
 
-    function nextFrame() {
-      return new Promise(resolve => requestAnimationFrame(resolve));
-    }
-
     async function appendAnswer(el, text) {
       el._markdown = (el._markdown || '') + text;
       setMarkdownBody(el, el._markdown);
       scrollToBottom();
-      await nextFrame();
+      await new Promise(r => requestAnimationFrame(r));
     }
 
     function parseSseEvents(buffer) {
@@ -443,9 +572,7 @@
       const rest = parts.pop() || '';
       for (const block of parts) {
         for (const line of block.split('\n')) {
-          if (line.startsWith('data: ')) {
-            events.push(line.slice(6).trim());
-          }
+          if (line.startsWith('data: ')) events.push(line.slice(6).trim());
         }
       }
       return { events, rest };
@@ -457,17 +584,18 @@
       busy = false;
       sendBtn.disabled = false;
       log.innerHTML = '';
-      addMsg('New conversation started.', 'sys');
+      addWelcomeCard(capabilities);
+      addMsg('已开始新对话。', 'sys');
       input.focus();
     }
 
     async function sendMessage() {
       const query = input.value.trim();
       if (!query || busy) return;
-
       busy = true;
       stickToBottom = true;
       sendBtn.disabled = true;
+      capPanel.querySelectorAll('.chip').forEach(c => { c.disabled = true; });
       input.value = '';
 
       const streamId = ++activeStreamId;
@@ -493,7 +621,6 @@
         });
 
         if (streamId !== activeStreamId) return;
-
         if (!res.ok) {
           finishBotBubble(ensureBotBubble());
           setBotError(botEl, '**Error:** HTTP ' + res.status);
@@ -507,10 +634,7 @@
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          if (streamId !== activeStreamId) {
-            await reader.cancel();
-            return;
-          }
+          if (streamId !== activeStreamId) { await reader.cancel(); return; }
 
           buffer += decoder.decode(value, { stream: true });
           const parsed = parseSseEvents(buffer);
@@ -519,16 +643,9 @@
           for (const raw of parsed.events) {
             if (!raw) continue;
             let evt;
-            try {
-              evt = JSON.parse(raw);
-            } catch {
-              continue;
-            }
+            try { evt = JSON.parse(raw); } catch { continue; }
             if (evt.conversation_id) conversationId = evt.conversation_id;
-
-            if (evt.event === 'tool_call') {
-              addToolCard(evt.tool, evt.args, evt.result, botEl);
-            }
+            if (evt.event === 'tool_call') addToolCard(evt.tool, evt.args, evt.result, botEl);
             if (evt.event === 'message' && evt.answer != null && evt.answer !== '') {
               await appendAnswer(ensureBotBubble(), String(evt.answer));
             }
@@ -539,9 +656,7 @@
           }
         }
 
-        if (botEl) {
-          finishBotBubble(botEl, '*(empty response)*');
-        }
+        if (botEl) finishBotBubble(botEl, '*(empty response)*');
         scrollToBottom(true);
       } catch (e) {
         if (streamId === activeStreamId) {
@@ -552,6 +667,7 @@
         if (streamId === activeStreamId) {
           busy = false;
           sendBtn.disabled = false;
+          capPanel.querySelectorAll('.chip').forEach(c => { c.disabled = false; });
           scrollToBottom(true);
           input.focus();
         }
@@ -559,11 +675,15 @@
     }
 
     log.addEventListener('toggle', () => scrollToBottom(stickToBottom), true);
-
     sendBtn.addEventListener('click', sendMessage);
     newChatBtn.addEventListener('click', startNewChat);
     input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
-    addMsg('Ready. Responses render as **Markdown**.', 'sys');
+
+    loadCapabilities().then(cap => {
+      addWelcomeCard(cap);
+      capPanel.classList.add('open');
+      toggleCapBtn.classList.add('active');
+    });
     input.focus();
   </script>
 </body>

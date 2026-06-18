@@ -68,10 +68,13 @@ def run_powershell(command: str, *, timeout_sec: int = DEFAULT_TIMEOUT_SEC) -> s
 def exec_powershell(command: str) -> str:
     """在固定的工作区目录下执行 PowerShell 命令。
 
-    用于脚本、python/pip、git 等。不要用 Get-Location 查路径——工作区根目录已知。
-    能用 list_dir / read_file / mkdir / write_file 时优先用专用工具。
+    用于列目录、读写文件、建目录、脚本、python/pip、git 等。
+    不要用 Get-Location 查路径——工作区根目录已知。
+    常用：Get-ChildItem -Name；Get-Content -Encoding UTF8；Set-Content -Encoding UTF8；
+    New-Item -ItemType Directory -Force。
+    抓取网页用 fetch_url；记忆用 memory_*。
 
     Args:
-        command: 纯 PowerShell 命令，例如 'python --version'、'Get-ChildItem demo'。
+        command: 纯 PowerShell 命令，例如 'Get-ChildItem -Name skills'。
     """
     return run_powershell(command)

@@ -52,15 +52,21 @@ class WorkspaceManager:
             rel = f"{SKILLS_DIR}/{skill_dir.name}/SKILL.md"
             desc = ""
             if skill_md.is_file():
-                text = skill_md.read_text(encoding="utf-8-sig", errors="replace")
+                text = skill_md.read_text(encoding="utf-8-sig")
                 for line in text.splitlines():
                     line = line.strip()
-                    if line and not line.startswith("#"):
-                        desc = line[:200]
-                        break
+                    if not line:
+                        continue
                     if line.startswith("#"):
-                        desc = line.lstrip("#").strip()[:200]
-                        break
+                        continue
+                    desc = line[:200]
+                    break
+                if not desc:
+                    for line in text.splitlines():
+                        line = line.strip()
+                        if line.startswith("#"):
+                            desc = line.lstrip("#").strip()[:200]
+                            break
             skills.append({"name": skill_dir.name, "description": desc, "path": rel})
         return skills
 

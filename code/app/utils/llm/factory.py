@@ -4,6 +4,7 @@ from typing import Dict, Type
 
 from config.llm_config import LLMConfig
 from utils.llm.base import BaseLLMProvider
+from utils.llm.cursor_provider import CursorLLMProvider
 from utils.llm.openai_provider import OpenAILLMProvider
 from utils.llm.ollama_provider import OllamaLLMProvider
 from utils.llm.vllm_provider import VLLMLLMProvider
@@ -26,6 +27,7 @@ class LLMFactory:
     _registry: Dict[str, Type[BaseLLMProvider]] = {
         "openai": OpenAILLMProvider,
         "bailian": OpenAILLMProvider,
+        "cursor": CursorLLMProvider,
         "ollama": OllamaLLMProvider,
         "vllm": VLLMLLMProvider,
     }

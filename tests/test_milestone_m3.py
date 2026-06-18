@@ -33,12 +33,11 @@ def test_tc09_web_search(api_client):
     assert "http" in answer.lower() or "3.12" in answer
 
 
-@pytest.mark.skip(reason="需实现 web_fetch — M3 完成后启用")
 def test_tc10_web_fetch(api_client):
-    """TC-10: web_fetch example.com。"""
+    """TC-10: fetch_url example.com。"""
     body = post_chat_blocking(
         api_client,
-        "抓取 https://example.com 并用一句话总结页面内容。",
+        "请使用 fetch_url 抓取 https://example.com 并用一句话总结页面内容。",
     )
-    answer = body.get("answer", "")
+    answer = body.get("answer", "") or ""
     assert "example" in answer.lower()

@@ -50,3 +50,24 @@ def test_openapi_available(base_url: str):
         pytest.skip("服务未启动")
     assert r.status_code == 200
     assert "paths" in r.json()
+
+
+@pytest.mark.smoke
+def test_capabilities_payload():
+    import asyncio
+    import sys
+
+    sys.path.insert(0, str(REPO_ROOT / "code" / "app"))
+    from api.v1.agent import get_capabilities
+
+    data = asyncio.run(get_capabilities())
+    names = {
+        t["name"]
+        for g in data.get("tool_groups", [])
+        for t in g.get("tools", [])
+    }
+    assert "exec_powershell" in names
+    assert "memory_search" in names
+    assert "fetch_url" in names
+    assert "delegate_subagent" in names
+    assert "quick_prompts" in data

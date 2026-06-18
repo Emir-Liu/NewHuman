@@ -36,4 +36,11 @@ def test_tool_registered():
     sys.path.insert(0, str(REPO_ROOT / "code" / "app"))
     from func.graph.tools.tool_registry import tools_by_name
 
-    assert "exec_powershell" in tools_by_name
+    for name in (
+        "exec_powershell",
+        "memory_append",
+        "memory_search",
+        "fetch_url",
+        "delegate_subagent",
+    ):
+        assert name in tools_by_name

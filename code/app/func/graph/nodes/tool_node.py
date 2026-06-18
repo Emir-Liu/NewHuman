@@ -8,7 +8,7 @@ import uuid
 from langchain_core.messages import AIMessage, ToolMessage
 
 from func.graph.state.state import WorkflowState
-from func.graph.tools.tool_registry import invoke_tool
+from func.graph.tools.tool_registry import invoke_tool_async
 
 
 def _tool_call_fields(tc) -> tuple[str, dict, str]:
@@ -51,7 +51,7 @@ async def tool_node(state: WorkflowState) -> dict:
         name, args, tid = _tool_call_fields(tc)
         if not name:
             continue
-        content = invoke_tool(name, args)
+        content = await invoke_tool_async(name, args)
         max_len = 8000
         display_result = (
             content

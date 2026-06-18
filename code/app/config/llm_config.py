@@ -20,7 +20,10 @@ class LLMConfig(BaseConfig):
 
         self.model_name: str = os.getenv('LLM_MODEL_NAME', '')
         self.base_url: str = os.getenv('LLM_MODEL_BASE_URL', '')
-        self.api_key: str = os.getenv('LLM_MODEL_API_KEY', '')
+        api_key = os.getenv('LLM_MODEL_API_KEY', '').strip()
+        if not api_key:
+            api_key = os.getenv('CURSOR_API_KEY', '').strip()
+        self.api_key: str = api_key
         self.api_type: str = os.getenv('LLM_MODEL_API_TYPE', '')
 
 

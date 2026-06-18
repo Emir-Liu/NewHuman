@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 
 from api.v1.chat_messages import router as chat_messages_router
 from api.v1.conversations import router as conversations_router
+from api.v1.agent import router as agent_router
 
 try:
     from api.v1.knowledge_bases import router as kb_router
@@ -118,6 +119,7 @@ if STATIC_DIR.is_dir():
 
 app.include_router(chat_messages_router, prefix="/v1", tags=["Chat"])
 app.include_router(conversations_router, prefix="/v1", tags=["Conversations"])
+app.include_router(agent_router, prefix="/v1", tags=["Agent"])
 
 if _KB_AVAILABLE and kb_router is not None:
     app.include_router(kb_router, prefix="/v1", tags=["Knowledge Base"])

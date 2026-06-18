@@ -23,14 +23,23 @@ class ContextAssembler:
         skills = self.manager.list_skills()
         if not skills:
             return ""
-        lines = ["## 可用技能"]
-        if is_tool_allowed("read_file"):
-            lines[0] += "（需要时用 read_file 读取完整 SKILL.md）"
+        lines = ["## 可用技能（Skills）"]
+        if is_tool_allowed("exec_powershell"):
+            lines.append(
+                "以下为摘要索引。**执行某技能前**，用 `exec_powershell` 执行 "
+                "`Get-Content skills/<名称>/SKILL.md -Encoding UTF8` 读全文；"
+                "`Get-ChildItem -Name skills` 可发现全部技能目录。"
+            )
         else:
-            lines[0] += "（路径如下，可用 exec_powershell 读取文件内容）"
+            lines.append("以下为摘要索引；需要完整说明时按路径读取 SKILL.md。")
         for s in skills:
             desc = s["description"] or "无描述"
             lines.append(f"- **{s['name']}**：{desc} — `{s['path']}`")
+        if any(s["name"] == "skill-creator" for s in skills):
+            lines.append(
+                "用户要求**创建、编写或学习技能**时，先 "
+                "`Get-Content skills/skill-creator/SKILL.md -Encoding UTF8`。"
+            )
         return "\n".join(lines)
 
     def _tool_rules(self) -> str:
@@ -66,6 +75,26 @@ class ContextAssembler:
 
 **回复语言：** 默认使用中文（见 USER.md）。"""
 
+    def _multi_agent_block(self) -> str:
+        if not is_tool_allowed("delegate_subagent"):
+            return ""
+        return """## 多 Agent 协作（任务编排）
+
+当用户请求**明显复杂**（多步骤、需并行调研、多领域专长、对比多个方案）时：
+
+1. **评估**：判断是否值得拆分；寒暄、单步读文件/命令、简单问答**不要**委派。
+2. **分解**：将工作拆成 2–4 个可独立完成的子任务。
+3. **委派**：对每个子任务调用 `delegate_subagent`（可选 `role`：researcher / coder / reviewer / summarizer）。
+4. **汇总**：收到全部子 Agent 结果后，由你综合对比并给出最终建议。
+
+**规则：**
+- 子 Agent **看不到**本对话历史；须在 `task` / `context` 中写清子任务必需背景。
+- 同一用户请求内可**顺序**多次调用 `delegate_subagent`；子 Agent **不能**再委派（嵌套深度受限）。
+- 委派前可用 `list_agent_roles` 查看预设角色；完整示例见 `skills/multi-agent/SKILL.md`。
+- 示例：用户要对比两个方案 → 分别委派「调研方案 A」「调研方案 B」，再合成对比表。
+
+**单 Agent 即可：** 打招呼、一次工具调用能完成的操作、对已有结果的追问。"""
+
     def assemble(self, *, include_bootstrap: bool = True) -> SystemMessage:
         self.manager.ensure_initialized()
         parts = [
@@ -82,6 +111,20 @@ class ContextAssembler:
         skills = self._skills_block()
         if skills:
             parts.append(f"\n{skills}")
+
+        if is_tool_allowed("memory_search"):
+            parts.append(
+                "\n## 记忆（文件存储）\n"
+                "长期摘要：`MEMORY.md`；日誌：`memory/YYYY-MM-DD.md`；"
+                "对话记录（每轮自动保存）：`memory/conversations/YYYY-MM-DD.md`。"
+                "MEMORY 不会每轮全量注入，需要回忆时主动调用 `memory_search`、"
+                "`memory_read` 或 `read_lines`；"
+                "用户要求记住信息时用 `memory_append`（日常）或 `memory_update_summary`（长期摘要）。"
+            )
+
+        multi_agent = self._multi_agent_block()
+        if multi_agent:
+            parts.append(f"\n{multi_agent}")
 
         return SystemMessage(content="\n".join(parts))
 

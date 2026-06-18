@@ -7,30 +7,70 @@ from typing import Any
 
 from langchain_core.tools import BaseTool
 
-from func.graph.tools.file_tool import list_dir, mkdir, read_file, write_file
+from func.graph.tools.file_tool import edit_lines, read_lines
+from func.graph.tools.memory_tool import (
+    memory_append,
+    memory_get,
+    memory_read,
+    memory_search,
+    memory_update_summary,
+)
 from func.graph.tools.powershell_tool import exec_powershell
+from func.graph.tools.subagent_context import get_subagent_depth
+from func.graph.tools.subagent_tool import delegate_subagent, list_agent_roles
+from func.graph.tools.web_tool import fetch_url
 
-# _MVP_TOOLS: list[BaseTool] = [read_file, list_dir, write_file, mkdir, exec_powershell]
-_MVP_TOOLS: list[BaseTool] = [exec_powershell]
+_MVP_TOOLS: list[BaseTool] = [
+    exec_powershell,
+    read_lines,
+    edit_lines,
+    memory_append,
+    memory_read,
+    memory_get,
+    memory_search,
+    memory_update_summary,
+    fetch_url,
+    list_agent_roles,
+    delegate_subagent,
+]
 
 tools_by_name: dict[str, BaseTool] = {t.name: t for t in _MVP_TOOLS}
 
 # 参数占位示例（schema 无 default 时使用）
 _ARG_PLACEHOLDERS: dict[str, dict[str, Any]] = {
-    "read_file": {"path": "SOUL.md"},
-    "list_dir": {"path": "."},
-    "write_file": {"path": "demo/hello.txt", "content": "你好"},
-    "mkdir": {"path": "demo/subdir"},
-    "exec_powershell": {"command": "python --version"},
+    "exec_powershell": {"command": "Get-ChildItem -Name"},
+    "read_lines": {"path": "demo/notes.txt", "start_line": 1, "end_line": 20, "num_lines": 0},
+    "edit_lines": {
+        "path": "demo/notes.txt",
+        "start_line": 5,
+        "end_line": 7,
+        "new_content": "新内容行",
+        "insert": False,
+    },
+    "memory_append": {"note": "用户喜欢简洁回复", "target": "daily"},
+    "memory_read": {"path": "MEMORY.md", "start_line": 1, "num_lines": 0},
+    "memory_get": {"path": "MEMORY.md", "start_line": 1, "num_lines": 0},
+    "memory_search": {"query": "小明", "max_results": 5},
+    "memory_update_summary": {"content": "用户叫小明", "mode": "append"},
+    "fetch_url": {"url": "https://example.com"},
+    "list_agent_roles": {},
+    "delegate_subagent": {
+        "task": "调研 Python 异步框架并列出优缺点",
+        "role": "researcher",
+        "context": "用户需要技术选型参考",
+    },
 }
 
 
 def get_allowed_tools() -> list[BaseTool]:
-    return list(_MVP_TOOLS)
+    tools = list(_MVP_TOOLS)
+    if get_subagent_depth() > 0:
+        tools = [t for t in tools if t.name != "delegate_subagent"]
+    return tools
 
 
 def get_allowed_tool_names() -> list[str]:
-    return [t.name for t in _MVP_TOOLS]
+    return [t.name for t in get_allowed_tools()]
 
 
 def is_tool_allowed(name: str) -> bool:
@@ -97,16 +137,57 @@ def format_tools_usage_notes() -> str:
     """根据已注册工具生成补充说明。"""
     names = set(get_allowed_tool_names())
     notes: list[str] = []
-    if "list_dir" in names and "exec_powershell" in names:
-        notes.append("列目录优先用 `list_dir`，不要用 `Get-ChildItem`。")
     if "exec_powershell" in names:
+        notes.append(
+            "工作区文件操作用 `exec_powershell`（cwd 已是工作区根，路径用相对路径）："
+            "列目录 `Get-ChildItem -Name <path>`；"
+            "写文件 `Set-Content -Path <path> -Value '...' -Encoding UTF8`；"
+            "建目录 `New-Item -ItemType Directory -Path <path> -Force`。"
+            "按行号读/改文本优先用 `read_lines` / `edit_lines`（输出含行号，比 Get-Content 更精确）。"
+        )
         notes.append(
             "调用 exec_powershell 时，`command` 里只写 PowerShell 命令本身，"
             "不要写 `exec_powershell \"...\"`。"
         )
-    if "read_file" not in names and "exec_powershell" in names:
-        notes.append("当前未注册 read_file；读文件可用 exec_powershell 执行 Get-Content。")
+    if "fetch_url" in names and "exec_powershell" in names:
+        notes.append("抓取网页用 `fetch_url`（含 SSRF 防护），不要用 Invoke-WebRequest / curl。")
+    if "memory_search" in names:
+        notes.append(
+            "记忆存于 `MEMORY.md`（长期摘要）、`memory/YYYY-MM-DD.md`（日志）"
+            "与 `memory/conversations/YYYY-MM-DD.md`（自动对话记录）；"
+            "回忆时用 `memory_search` + `memory_read` 或 `read_lines`；写入用 `memory_append`。"
+        )
+    if "exec_powershell" in names:
+        notes.append(
+            "技能位于 `skills/<名称>/SKILL.md`；系统提示「可用技能」仅为摘要，"
+            "执行前用 `Get-Content skills/<名称>/SKILL.md -Encoding UTF8` 读全文；"
+            "`Get-ChildItem -Name skills` 可列出全部技能目录。"
+        )
+        notes.append(
+            "创建新技能：先 `Get-Content skills/skill-creator/SKILL.md -Encoding UTF8`，"
+            "再用 `New-Item` + `Set-Content` 创建 `skills/<名称>/SKILL.md`。"
+        )
+    if "delegate_subagent" in names:
+        notes.append(
+            "复杂任务可分解后调用 `delegate_subagent` 委派子 Agent；"
+            "子 Agent 无父对话历史，须在 task/context 写清背景；"
+            "可用 `list_agent_roles` 查看 researcher/coder/reviewer/summarizer 等预设角色。"
+        )
     return "\n".join(notes)
+
+
+async def invoke_tool_async(name: str, args: dict[str, Any]) -> str:
+    tool = tools_by_name.get(name)
+    if tool is None:
+        return f"Error: tool '{name}' is not allowed or not registered."
+    try:
+        if hasattr(tool, "ainvoke"):
+            result = await tool.ainvoke(args)
+        else:
+            result = tool.invoke(args)
+        return str(result)
+    except Exception as e:
+        return f"Error executing {name}: {e}"
 
 
 def invoke_tool(name: str, args: dict[str, Any]) -> str:
